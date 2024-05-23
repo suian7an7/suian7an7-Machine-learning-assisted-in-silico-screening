@@ -1,0 +1,48 @@
+import requests
+from bs4 import BeautifulSoup
+
+def get_ligand(ligand_id):
+    tmp_url = f"https://www.rcsb.org/ligand/{ligand_id}"
+    
+    response = requests.get(tmp_url)
+    if response.status_code != 200:
+        return response.status_code, []
+
+    # Parse the HTML content
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    # Get SMILES, InChI, and InChIKey from the tables
+    try:
+        smile_table = soup.find('tr', id='chemicalIsomeric')
+        smile = smile_table.find('td').text.strip()
+        
+        inChI_table = soup.find('tr', id='chemicalInChI')
+        inChI = inChI_table.find('td').text.strip()
+        
+        inChIKey_table = soup.find('tr', id='chemicalInChIKey')
+        inChIKey = inChIKey_table.find('td').text.strip()
+    except AttributeError:
+        return None
+
+    return [smile, inChI, inChIKey]
+
+ligand_properties_list = []
+
+# Assuming ligand_data is a DataFrame with a column 'ligand_id'
+for ligand_id in ligand_data['ligand_id']:
+    result = get_ligand(ligand_id)
+    if result:
+        ligand_properties_list.append(result)
+
+ligand_properties_data = {
+    'smile': [],
+    'inChI': [],
+    'inChIKey': []
+}
+
+for record in ligand_properties_list:
+    ligand_properties_data['smile'].append(record[0])
+    ligand_properties_data['inChI'].append(record[1])
+    ligand_properties_data['inChIKey'].append(record[2])
+
+print(ligand_properties_data)
