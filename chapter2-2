@@ -1,0 +1,80 @@
+import requests
+from bs4 import BeautifulSoup
+import re
+
+def get_ligand(protein_id):
+    protein_url = "https://www.rcsb.org/structure/" + protein_id
+    response = requests.get(protein_url)
+    if response.status_code != 200:
+        return response.status_code, []
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    binding_affinity_annotations_tables = soup.find_all('tr', id='row_0')
+
+    if not binding_affinity_annotations_tables:
+        return "No binding data", []
+
+    for tr in binding_affinity_annotations_tables:
+        binding_affinity_annotations_texts = [td.get_text(strip=True) for td in tr.find_all('td')]
+
+    ligand_id = binding_affinity_annotations_texts[0]
+    inhibitory_activity = binding_affinity_annotations_texts[2]
+
+    ki_match = re.search(r'Ki', inhibitory_activity)
+    if ki_match:
+        ki = ki_match.group()
+        inhibitory_activity_value = float(re.search(r'\d+\.?\d*e?[+-]?\d*', inhibitory_activity).group())
+    else:
+        ki = "IC50"
+        inhibitory_activity_values = re.findall(r'\d+\.?\d*e?[+-]?\d*', inhibitory_activity)
+        if len(inhibitory_activity_values) >= 4:
+            Inhibitory_min = float(inhibitory_activity_values[1])
+            Inhibitory_max = float(inhibitory_activity_values[2])
+            inhibitory_activity_value = (Inhibitory_min + Inhibitory_max) / 2
+        else:
+            inhibitory_activity_value = float(inhibitory_activity_values[1])
+
+    unit = re.search(r'nM', inhibitory_activity).group()
+
+    macromolecule_tables = soup.find_all('tr', id='macromolecule-entityId-1-rowDescription')
+    for tr in macromolecule_tables:
+        macromolecule_tables_texts = [td.get_text(strip=True) for td in tr.find_all('td')]
+    macromolecule = macromolecule_tables_texts[0]
+
+    return ligand_id, ki, inhibitory_activity_value, unit, macromolecule
+
+data_list = []
+protein_lists = ['2OP9', '2V6N', '2Z94', '2Z9G', '2ZU4', '2ZU5', '3SN8', '2ALV', '2GZ7', '2GZ8', '2QIQ', '2VJ1', '2XYR', '3E9S', '3MJ5', '3V3M', '4MDS', '4OVZ', '4OW0', '4TWW', '4WY3', '6W63']
+for protein in protein_lists:
+    result = get_ligand(protein)
+    if result[0] != "No binding data":
+        data_list.append(result)
+
+ligand_data = {
+    'ligand_id': [],
+    'ki/IC50': [],
+    'inhibitory_activity_value': [],
+    'unit': [],
+    'macromolecule': []
+}
+
+for record in data_list:
+    ligand_data['ligand_id'].append(record[0])
+    ligand_data['ki/IC50'].append(record[1])
+    ligand_data['inhibitory_activity_value'].append(record[2])
+    ligand_data['unit'].append(record[3])
+    ligand_data['macromolecule'].append(record[4])
+
+formatted_results = []
+for i in range(len(ligand_data['ligand_id'])):
+    if ligand_data['ki/IC50'][i] == "Ki":
+        formatted_results.append(f"Ki:&nbsp{ligand_data['inhibitory_activity_value'][i]} ({ligand_data['unit'][i]}) from 1 assay(s)")
+    else:
+        inhibitory_activity_value_str = f"{ligand_data['inhibitory_activity_value'][i]}"
+        formatted_results.append(f"IC50:&nbsp{inhibitory_activity_value_str} ({ligand_data['unit'][i]}) from 1 assay(s)")
+
+for result in formatted_results:
+    print(result)
+
+print(ligand_data)
