@@ -1,0 +1,8 @@
+# pandasに変換
+df = pd.DataFrame(data={"id": ids, "original_smiles": org_smiles, "canonical_smiles": canonical_smiles, "outcome": outcomes})
+
+ #重複チェック
+# df["dup"] = df["canonical_smiles"].duplicated()
+
+# インデックスを除外してCSVファイルに保存
+df.to_csv("merged_file_path.csv", index=False)
