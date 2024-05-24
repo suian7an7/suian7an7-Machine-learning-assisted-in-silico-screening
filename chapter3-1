@@ -1,0 +1,35 @@
+import csv
+
+# 定义文件路径
+input_chembl_path = "/content/processed_compounds_of_details.csv"
+input_pdb_path = "/content/3C-like_and_main_proteases.csv"
+output_file_path = "/content/output.csv"
+merged_file_path = "/content/merged_data.csv"
+
+# 初始化空列表
+ids = []
+org_smiles = []
+canonical_smiles = []
+outcomes = []
+
+# 读取ChEMBL数据
+with open(input_chembl_path, "r") as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        ids.append(row["chembl_id"])
+        org_smiles.append(row["canonical_smiles"])
+        canonical_smiles.append(row["canonical_smiles"])
+        outcomes.append(row["outcome"])
+
+# 假设这里有一些数据处理逻辑，例如合并数据或进行分析
+# 例如：
+# merged_data = some_processing_function(ids, org_smiles, canonical_smiles, outcomes)
+
+# 将处理后的数据导出到CSV文件
+with open(output_file_path, "w", newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow(["chembl_id", "canonical_smiles", "outcome"])  # 写入表头
+    for i in range(len(ids)):
+        writer.writerow([ids[i], canonical_smiles[i], outcomes[i]])
+
+print("数据已成功导出到", output_file_path)
