@@ -1,0 +1,41 @@
+import csv
+from collections import defaultdict
+
+# 文件路径
+input_file_path = '/content/data-1716469991388.csv'
+output_file_path = '/content/processed_compounds_of_details.csv'
+
+def process_csv(input_path, output_path):
+    rows_by_id = defaultdict(list)
+
+    # 读取CSV文件，并按照CHEMBL ID进行分组
+    with open(input_path, "r") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            rows_by_id[row["compound_chembl_id"]].append(row)
+
+    # 设定判断active的阈值
+    threshold = 10000
+
+    # 打开输出文件
+    with open(output_path, "w") as f:
+        writer = csv.writer(f, lineterminator="\n")
+        writer.writerow(["chembl_id", "canonical_smiles", "value", "outcome"])
+
+        # 处理每个CHEMBL ID的数据
+        for id in rows_by_id:
+            total = 0.0
+            for row in rows_by_id[id]:
+                value = row["standard_value"]
+                total += float(value)
+            
+            mean = total / len(rows_by_id[id])
+            outcome = 0
+            if mean < threshold:
+                outcome = 1
+            
+            # 写入结果到输出文件
+            writer.writerow([id, rows_by_id[id][0]["canonical_smiles"], mean, outcome])
+
+# 调用函数处理CSV文件
+process_csv(input_file_path, output_file_path)
